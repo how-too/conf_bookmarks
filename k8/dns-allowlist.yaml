@@ -1,0 +1,44 @@
+apiVersion: radix.domain.com/v1
+kind: RadixApplication
+metadata:
+  name: msecurity-app
+spec:
+  environments:
+    - name: with-dns-rules
+      build:
+        from: main
+      egress:
+        allowRadix: false
+        allowedDnsZones:
+          - "main-domain.com"
+          - "*.allowed-domain.com"
+    - name: without-dns-rules
+      egress:
+        allowRadix: false
+      build:
+        from: main
+  components:
+    - name: log4shell
+      authentication:
+        oauth2:
+          clientId: UID
+          scope: openid profile email offline_access
+          setXAuthRequestHeaders: true
+          setAuthorizationHeader: true
+          sessionStoreType: redis
+          redisStore:
+            connectionUrl: redis://redis:6379
+      src: ./src
+      ports:
+      - name: http
+        port: 8080
+      publicPort: http
+      secret:
+      - DB_PASSWORD
+    - name: redis
+      src: ./redis
+      secrets:
+        - REDIS_PASSWORD
+      ports:
+        - name: redis
+          port: 6379
